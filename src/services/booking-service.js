@@ -3,7 +3,7 @@ const {StatusCodes} = require('http-status-codes');
 const {Enums} = require('../utils/common');
 const { BOOKED, CANCELLED } = Enums.BOOKING_STATUS;
 const { BookingRepository } = require('../repositories');
-const { ServerConfig } = require('../config')
+const { ServerConfig, Queue } = require('../config')
 const db = require('../models');
 const AppError = require('../utils/errors/app-error');
 
@@ -53,7 +53,12 @@ async function makePayment(data) {
             throw new AppError('The user corresponding to the booking doesnt match', StatusCodes.BAD_REQUEST);
         }
         // we assume here that payment is successful
-         await bookingRepository.update(data.bookingId, {status: BOOKED}, transaction);
+        await bookingRepository.update(data.bookingId, {status: BOOKED}, transaction);
+        Queue.sendData({
+        recepientEmail: 'shreyancebgp28@gmail.com',
+        subject: 'Flight booked',
+        text: `Booking successfully done for the booking ${data.bookingId}`
+        });
         await transaction.commit();
     } catch(error) {
         await transaction.rollback();
